@@ -1,12 +1,15 @@
+# This file configures GCP resources needed for a typical file based enterprise 
+# integration using GCS (Google Cloud Stroage).
+
 ###############################################
-# Bucket names reside in a single Cloud Storage namespace. When use this script
+# Bucket names reside in a single Cloud Storage namespace. When using this script
 # for another project, make sure the bucket names are updated to something unique.
 # Recommended to add project ID as prefix.
 ###############################################
 
 # "inbox" bucket holds uploaded data files.
 resource "google_storage_bucket" "inbox" {
-  name     = "developertips-ei-inbox"
+  name     = "${local.gcp_project_id}-ei-inbox"
   location = "us-west2"
 
   force_destroy = false
@@ -25,7 +28,7 @@ resource "google_storage_bucket" "inbox" {
 
 # "error" bucket holds data files from the inbox that are either not retriable or have exhausted retries.
 resource "google_storage_bucket" "error" {
-  name     = "developertips-ei-error"
+  name     = "${local.gcp_project_id}-ei-error"
   location = "us-west2"
 
   force_destroy = false
@@ -44,13 +47,13 @@ resource "google_storage_bucket" "error" {
 
 # "archive" bucket holds data files that are processed successfully.
 resource "google_storage_bucket" "archive" {
-  name     = "developertips-ei-archive"
+  name     = "${local.gcp_project_id}-ei-archive"
   location = "us-west2"
 
   force_destroy = false
   storage_class = "REGIONAL"
 
-  # Archive file can progress to near line, cold line then deleted
+  # Archive file can progress gradually to near line, cold line then deleted
   lifecycle_rule {
     action {
       type          = "SetStorageClass"
@@ -119,7 +122,6 @@ resource "google_cloudfunctions_function" "inbox" {
     resource   = "${google_pubsub_topic.inbox.name}"
 
     failure_policy {
-      # Retry if Cloud Function throws error.
       retry = true
     }
   }
@@ -134,7 +136,7 @@ data "archive_file" "ei_inbox_function_zip" {
 
 # Bucket for the source code
 resource "google_storage_bucket" "ei_source" {
-  name     = "developertips-ei-source"
+  name     = "${local.gcp_project_id}-ei-source"
   location = "us-west2"
 
   force_destroy = false
@@ -146,7 +148,7 @@ resource "google_storage_bucket" "ei_source" {
     }
 
     condition {
-      age = 1
+      age = 1000
     }
   }
 }
@@ -164,22 +166,28 @@ resource "google_storage_bucket_object" "ei_inbox_function_zip" {
 # IAM permissions for the Cloud Function
 # HACK: could not find a way to specify the custom service account for Cloud Function. Also 
 #  could not find a way to get Cloud Function's service account. Harcoded value used below.
+locals {
+  cloud_function_service_account = "serviceAccount:${local.gcp_project_id}@appspot.gserviceaccount.com"
+}
+
 resource "google_storage_bucket_iam_member" "gcf_inbox" {
   bucket = "${google_storage_bucket.inbox.name}"
 
   # Cloud Function need to read, delete objects in inbox
-  role   = "roles/storage.objectAdmin"
-  member = "serviceAccount:developertips@appspot.gserviceaccount.com"
+  role = "roles/storage.objectAdmin"
+
+  # By default, Cloud Function and App Engine share the same service account with this format.
+  member = "${local.cloud_function_service_account}"
 }
 
 resource "google_storage_bucket_iam_member" "gcf_archive" {
   bucket = "${google_storage_bucket.archive.name}"
   role   = "roles/storage.objectCreator"
-  member = "serviceAccount:developertips@appspot.gserviceaccount.com"
+  member = "${local.cloud_function_service_account}"
 }
 
 resource "google_storage_bucket_iam_member" "gcf_error" {
   bucket = "${google_storage_bucket.error.name}"
   role   = "roles/storage.objectCreator"
-  member = "serviceAccount:developertips@appspot.gserviceaccount.com"
+  member = "${local.cloud_function_service_account}"
 }

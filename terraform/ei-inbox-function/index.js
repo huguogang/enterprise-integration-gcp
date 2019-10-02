@@ -1,6 +1,7 @@
 const { Storage } = require('@google-cloud/storage');
 const storage = new Storage();
 
+// TODO: Change the buckets to your own ahrive and error boxes.
 const ARCHIVE_BUCKET = storage.bucket("developertips-ei-archive");
 const ERROR_BUCKET = storage.bucket("developertips-ei-error");
 

@@ -1,7 +1,21 @@
-provider "google" {
-  # Change to your own project and region / zone preference.
+# TFSTATE  backend
+terraform {
+  backend "gcs" {
+    bucket = "developertips-tfstate"
+    prefix = "eigcp"
+  }
+}
 
-  project = "developertips"
+############################################
+# Global GCP Configuration
+############################################
+locals {
+  # TODO: Change to your own project id
+  gcp_project_id = "developertips"
+}
+
+provider "google" {
+  project = "${local.gcp_project_id}"
   region  = "us-central1"
   zone    = "us-central1-c"
 }
