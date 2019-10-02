@@ -119,9 +119,8 @@ resource "google_cloudfunctions_function" "inbox" {
     resource   = "${google_pubsub_topic.inbox.name}"
 
     failure_policy {
-      # Disable Cloud Function's retry. For this integration pipeline, retry is controlled by Cloud Pub/Sub.
-      # As long as Cloud Function do not ACK the message, CPS will keep retrying for about 2 weeks.
-      retry = false
+      # Retry if Cloud Function throws error.
+      retry = true
     }
   }
 }
@@ -160,4 +159,27 @@ resource "google_storage_bucket_object" "ei_inbox_function_zip" {
 
   bucket = "${google_storage_bucket.ei_source.name}"
   source = "${data.archive_file.ei_inbox_function_zip.output_path}"
+}
+
+# IAM permissions for the Cloud Function
+# HACK: could not find a way to specify the custom service account for Cloud Function. Also 
+#  could not find a way to get Cloud Function's service account. Harcoded value used below.
+resource "google_storage_bucket_iam_member" "gcf_inbox" {
+  bucket = "${google_storage_bucket.inbox.name}"
+
+  # Cloud Function need to read, delete objects in inbox
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:developertips@appspot.gserviceaccount.com"
+}
+
+resource "google_storage_bucket_iam_member" "gcf_archive" {
+  bucket = "${google_storage_bucket.archive.name}"
+  role   = "roles/storage.objectCreator"
+  member = "serviceAccount:developertips@appspot.gserviceaccount.com"
+}
+
+resource "google_storage_bucket_iam_member" "gcf_error" {
+  bucket = "${google_storage_bucket.error.name}"
+  role   = "roles/storage.objectCreator"
+  member = "serviceAccount:developertips@appspot.gserviceaccount.com"
 }

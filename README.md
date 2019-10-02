@@ -19,3 +19,11 @@ terraform import google_storage_bucket.inbox developertips-ei-inbox
 terraform import google_storage_bucket.archive developertips-ei-archive
 terraform import google_storage_bucket.error developertips-ei-error
 ```
+
+## Cloud Function
+
+To view logs
+
+```
+gcloud functions logs read
+```
