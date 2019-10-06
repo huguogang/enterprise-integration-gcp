@@ -1,18 +1,28 @@
 # enterprise-integration-gcp
-Enterprise Integration on Google Cloud Platform.
 
+Enterprise Integration using Google Cloud Platform products. Companion 
+artiles with in depth discussion: 
+http://developertips.blogspot.com/search/label/Enterprise%20Integration.
 
 ## Deploy GCP Infra
 
 Terraform commands:
 
 ```
+# Init terraform.
 terraform init
+
+# Plan (preview) terraform changes.
 terraform plan
+
+# Apply terraform changes.
 terraform apply
+
+# Format terraform code.
+terraform fmt
 ```
 
-Sync with state with actual
+Sample command to sync tfstate with actual:
 
 ```
 terraform import google_storage_bucket.inbox developertips-ei-inbox
