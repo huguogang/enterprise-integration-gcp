@@ -20,6 +20,10 @@ terraform apply
 
 # Format terraform code.
 terraform fmt
+
+# Clean Up
+terraform plan -destroy
+terraform destroy
 ```
 
 Sample command to sync tfstate with actual:
